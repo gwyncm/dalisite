@@ -1,0 +1,96 @@
+version: '3.6'
+
+services:
+
+  mongodb:
+    image: mongodb/mongodb-community-server
+    ports: 
+      - 27017:27017
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin8623
+      MONGO_INITDB_DATABASE: admin
+    volumes:
+      - mongo_vol:/data/db
+      - mongo_cfg:/data/configdb
+
+  nginx:
+    image: gwyncm/nginxconf:24.02.08
+    ports:
+      - 8080:8080  
+    restart: always
+     
+  freeloader:
+    image: gwyncm/freeloader:24.02.06
+    ports:
+      - 8070:8070    
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOST: redis
+    labels:
+      kompose.volume.size: 2Gi  
+    volumes:
+      -  uploads_vol:/freeloader/uploads
+    restart: always
+
+  schedman:
+      image: gwyncm/schedman:24.02.08
+      ports:
+        - 8060:8060    
+      depends_on:
+        - redis
+        - freeloader
+      environment:
+        REDIS_HOST: redis
+        APP_HOST: freeloader:8070
+      restart: always
+
+  daliapp:
+    image: gwyncm/daliapp:24.02.10
+    ports:
+      - 8090:8090    
+    depends_on:
+      - redis
+      - freeloader
+      - schedman
+    environment:
+      REDIS_HOST: redis
+      APP_HOST: freeloader:8070
+    restart: always
+
+  redis:
+    image: redis:6.2-bookworm
+    ports: 
+      - 6379:6379
+    volumes:
+      - redis_vol:/data
+    restart: always
+
+  daliserv:
+    image: gwyncm/daliserv:24.02.07
+    depends_on:
+      - redis
+      - daliapp
+    deploy:
+      replicas: 2
+    environment:
+      REDIS_HOST: redis
+      APP_HOST: freeloader:8070
+    restart: always
+
+  filebrowser:
+    image: filebrowser/filebrowser
+    ports:
+      - 8081:80
+    volumes:
+      - uploads_vol:/srv 
+      - ./filebrowser/filebrowser.db:/database.db
+      - ./filebrowser/filebrowser.json:/.filebrowser.json
+
+volumes:
+  uploads_vol:
+  redis_vol:
+  mongo_vol:
+  mongo_cfg:

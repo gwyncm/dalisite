@@ -1,0 +1,269 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dalichart.fullname" . }}-daliapp
+  labels:
+    io.kompose.service: daliapp
+  {{- include "dalichart.labels" . | nindent 4 }}
+  annotations:
+    kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+    kompose.version: 1.31.2 (a92241f79)
+spec:
+  replicas: {{ .Values.daliapp.replicas }}
+  selector:
+    matchLabels:
+      io.kompose.service: daliapp
+    {{- include "dalichart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        io.kompose.network/daliserv-default: "true"
+        io.kompose.service: daliapp
+      {{- include "dalichart.selectorLabels" . | nindent 8 }}
+      annotations:
+        kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+        kompose.version: 1.31.2 (a92241f79)
+    spec:
+      containers:
+      - env:
+        - name: APP_HOST
+          value: {{ quote .Values.daliapp.daliapp.env.appHost }}
+        - name: REDIS_HOST
+          value: {{ quote .Values.daliapp.daliapp.env.redisHost }}
+        - name: TZ
+          value: {{ quote .Values.daliapp.daliapp.env.tz }}
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.daliapp.daliapp.image.repository }}:{{ .Values.daliapp.daliapp.image.tag
+          | default .Chart.AppVersion }}
+        name: daliapp
+        ports:
+        - containerPort: 8090
+          hostPort: 8090
+          protocol: TCP
+        resources: {}
+      restartPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dalichart.fullname" . }}-daliserv
+  labels:
+    io.kompose.service: daliserv
+  {{- include "dalichart.labels" . | nindent 4 }}
+  annotations:
+    kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+    kompose.version: 1.31.2 (a92241f79)
+spec:
+  replicas: {{ .Values.daliserv.replicas }}
+  selector:
+    matchLabels:
+      io.kompose.service: daliserv
+    {{- include "dalichart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        io.kompose.network/daliserv-default: "true"
+        io.kompose.service: daliserv
+      {{- include "dalichart.selectorLabels" . | nindent 8 }}
+      annotations:
+        kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+        kompose.version: 1.31.2 (a92241f79)
+    spec:
+      containers:
+      - env:
+        - name: APP_HOST
+          value: {{ quote .Values.daliserv.daliserv.env.appHost }}
+        - name: REDIS_HOST
+          value: {{ quote .Values.daliserv.daliserv.env.redisHost }}
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.daliserv.daliserv.image.repository }}:{{ .Values.daliserv.daliserv.image.tag
+          | default .Chart.AppVersion }}
+        name: daliserv
+        resources: {}
+      restartPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dalichart.fullname" . }}-freeloader
+  labels:
+    io.kompose.service: freeloader
+  {{- include "dalichart.labels" . | nindent 4 }}
+  annotations:
+    kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+    kompose.version: 1.31.2 (a92241f79)
+    kompose.volume.size: 2Gi
+spec:
+  replicas: {{ .Values.freeloader.replicas }}
+  selector:
+    matchLabels:
+      io.kompose.service: freeloader
+    {{- include "dalichart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        io.kompose.network/daliserv-default: "true"
+        io.kompose.service: freeloader
+      {{- include "dalichart.selectorLabels" . | nindent 8 }}
+      annotations:
+        kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+        kompose.version: 1.31.2 (a92241f79)
+        kompose.volume.size: 2Gi
+    spec:
+      containers:
+      - env:
+        - name: REDIS_HOST
+          value: {{ quote .Values.freeloader.freeloader.env.redisHost }}
+        - name: TZ
+          value: {{ quote .Values.freeloader.freeloader.env.tz }}
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.freeloader.freeloader.image.repository }}:{{ .Values.freeloader.freeloader.image.tag
+          | default .Chart.AppVersion }}
+        name: freeloader
+        ports:
+        - containerPort: 8070
+          hostPort: 8070
+          protocol: TCP
+        resources: {}
+        volumeMounts:
+        - mountPath: /freeloader/uploads
+          name: uploads-vol
+      restartPolicy: Always
+      volumes:
+      - name: uploads-vol
+        persistentVolumeClaim:
+          claimName: {{ include "dalichart.fullname" . }}-uploads-vol
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dalichart.fullname" . }}-nginx
+  labels:
+    io.kompose.service: nginx
+  {{- include "dalichart.labels" . | nindent 4 }}
+  annotations:
+    kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+    kompose.version: 1.31.2 (a92241f79)
+spec:
+  replicas: {{ .Values.nginx.replicas }}
+  selector:
+    matchLabels:
+      io.kompose.service: nginx
+    {{- include "dalichart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        io.kompose.network/daliserv-default: "true"
+        io.kompose.service: nginx
+      {{- include "dalichart.selectorLabels" . | nindent 8 }}
+      annotations:
+        kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+        kompose.version: 1.31.2 (a92241f79)
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.nginx.nginx.image.repository }}:{{ .Values.nginx.nginx.image.tag
+          | default .Chart.AppVersion }}
+        name: nginx
+        ports:
+        - containerPort: 8080
+          hostPort: 8080
+          protocol: TCP
+        resources: {}
+      restartPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dalichart.fullname" . }}-redis
+  labels:
+    io.kompose.service: redis
+  {{- include "dalichart.labels" . | nindent 4 }}
+  annotations:
+    kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+    kompose.version: 1.31.2 (a92241f79)
+spec:
+  replicas: {{ .Values.redis.replicas }}
+  selector:
+    matchLabels:
+      io.kompose.service: redis
+    {{- include "dalichart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        io.kompose.network/daliserv-default: "true"
+        io.kompose.service: redis
+      {{- include "dalichart.selectorLabels" . | nindent 8 }}
+      annotations:
+        kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+        kompose.version: 1.31.2 (a92241f79)
+    spec:
+      containers:
+      - env:
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.redis.redis.image.repository }}:{{ .Values.redis.redis.image.tag
+          | default .Chart.AppVersion }}
+        name: redis
+        ports:
+        - containerPort: 6379
+          hostPort: 6379
+          protocol: TCP
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: redis-vol
+      restartPolicy: Always
+      volumes:
+      - name: redis-vol
+        persistentVolumeClaim:
+          claimName: {{ include "dalichart.fullname" . }}-redis-vol
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dalichart.fullname" . }}-schedman
+  labels:
+    io.kompose.service: schedman
+  {{- include "dalichart.labels" . | nindent 4 }}
+  annotations:
+    kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+    kompose.version: 1.31.2 (a92241f79)
+spec:
+  replicas: {{ .Values.schedman.replicas }}
+  selector:
+    matchLabels:
+      io.kompose.service: schedman
+    {{- include "dalichart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        io.kompose.network/daliserv-default: "true"
+        io.kompose.service: schedman
+      {{- include "dalichart.selectorLabels" . | nindent 8 }}
+      annotations:
+        kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+        kompose.version: 1.31.2 (a92241f79)
+    spec:
+      containers:
+      - env:
+        - name: APP_HOST
+          value: {{ quote .Values.schedman.schedman.env.appHost }}
+        - name: REDIS_HOST
+          value: {{ quote .Values.schedman.schedman.env.redisHost }}
+        - name: KUBERNETES_CLUSTER_DOMAIN
+          value: {{ quote .Values.kubernetesClusterDomain }}
+        image: {{ .Values.schedman.schedman.image.repository }}:{{ .Values.schedman.schedman.image.tag
+          | default .Chart.AppVersion }}
+        name: schedman
+        ports:
+        - containerPort: 8060
+          hostPort: 8060
+          protocol: TCP
+        resources: {}
+      restartPolicy: Always

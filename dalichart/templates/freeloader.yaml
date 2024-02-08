@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dalichart.fullname" . }}-freeloader
+  labels:
+    io.kompose.service: freeloader
+  {{- include "dalichart.labels" . | nindent 4 }}
+  annotations:
+    kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+    kompose.version: 1.31.2 (a92241f79)
+    kompose.volume.size: 2Gi
+spec:
+  type: {{ .Values.freeloader.type }}
+  selector:
+    io.kompose.service: freeloader
+  {{- include "dalichart.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.freeloader.ports | toYaml | nindent 2 -}}

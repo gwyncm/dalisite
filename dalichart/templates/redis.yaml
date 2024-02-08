@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "dalichart.fullname" . }}-redis
+  labels:
+    io.kompose.service: redis
+  {{- include "dalichart.labels" . | nindent 4 }}
+  annotations:
+    kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+    kompose.version: 1.31.2 (a92241f79)
+spec:
+  type: {{ .Values.redis.type }}
+  selector:
+    io.kompose.service: redis
+  {{- include "dalichart.selectorLabels" . | nindent 4 }}
+  ports:
+	{{- .Values.redis.ports | toYaml | nindent 2 -}}

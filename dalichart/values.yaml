@@ -1,0 +1,80 @@
+daliapp:
+  daliapp:
+    env:
+      appHost: freeloader:8070
+      redisHost: redis
+      tz: America/New_York
+    image:
+      repository: gwyncm/daliapp
+      tag: 24.01.15
+  ports:
+  - name: "8090"
+    port: 8090
+    targetPort: 8090
+  replicas: 1
+  type: ClusterIP
+daliserv:
+  daliserv:
+    env:
+      appHost: freeloader:8070
+      redisHost: redis
+    image:
+      repository: gwyncm/daliserv
+      tag: 23.12.29
+  replicas: 2
+freeloader:
+  freeloader:
+    env:
+      redisHost: redis
+      tz: America/New_York
+    image:
+      repository: gwyncm/freeloader
+      tag: 24.01.12
+  ports:
+  - name: "8070"
+    port: 8070
+    targetPort: 8070
+  replicas: 1
+  type: ClusterIP
+kubernetesClusterDomain: cluster.local
+nginx:
+  nginx:
+    image:
+      repository: gwyncm/nginxconf
+      tag: 24.01.12
+  ports:
+  - name: "8080"
+    port: 8080
+    targetPort: 8080
+  replicas: 1
+  type: ClusterIP
+pvc:
+  redisVol:
+    storageRequest: 100Mi
+  uploadsVol:
+    storageRequest: 2Gi
+redis:
+  ports:
+  - name: "6379"
+    port: 6379
+    targetPort: 6379
+  redis:
+    image:
+      repository: redis
+      tag: 5.0-buster
+  replicas: 1
+  type: ClusterIP
+schedman:
+  ports:
+  - name: "8060"
+    port: 8060
+    targetPort: 8060
+  replicas: 1
+  schedman:
+    env:
+      appHost: freeloader:8070
+      redisHost: redis
+    image:
+      repository: gwyncm/schedman
+      tag: 24.01.12
+  type: ClusterIP

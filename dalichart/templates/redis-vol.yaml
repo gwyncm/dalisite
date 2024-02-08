@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "dalichart.fullname" . }}-redis-vol
+  labels:
+    io.kompose.service: redis-vol
+  {{- include "dalichart.labels" . | nindent 4 }}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.pvc.redisVol.storageRequest | quote }}

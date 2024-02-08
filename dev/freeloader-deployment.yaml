@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+    kompose.version: 1.31.2 (a92241f79)
+    kompose.volume.size: 2Gi
+  creationTimestamp: null
+  labels:
+    io.kompose.service: freeloader
+  name: freeloader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: freeloader
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+        kompose.version: 1.31.2 (a92241f79)
+        kompose.volume.size: 2Gi
+      creationTimestamp: null
+      labels:
+        io.kompose.network/daliserv-default: "true"
+        io.kompose.service: freeloader
+    spec:
+      containers:
+        - env:
+            - name: REDIS_HOST
+              value: redis
+            - name: TZ
+              value: America/New_York
+          image: gwyncm/freeloader:24.01.19
+          name: freeloader
+          ports:
+            - containerPort: 8070
+              hostPort: 8070
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - mountPath: /freeloader/uploads
+              name: uploads-vol
+      restartPolicy: Always
+      volumes:
+        - name: uploads-vol
+          persistentVolumeClaim:
+            claimName: uploads-vol
+status: {}

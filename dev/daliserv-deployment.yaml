@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+    kompose.version: 1.31.2 (a92241f79)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: daliserv
+  name: daliserv
+spec:
+  replicas: 8
+  selector:
+    matchLabels:
+      io.kompose.service: daliserv
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
+        kompose.version: 1.31.2 (a92241f79)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/daliserv-default: "true"
+        io.kompose.service: daliserv
+    spec:
+      containers:
+        - env:
+            - name: APP_HOST
+              value: freeloader:8070
+            - name: REDIS_HOST
+              value: redis
+          image: gwyncm/daliserv:24.01.19
+          name: daliserv
+          resources: {}
+      restartPolicy: Always
+status: {}
