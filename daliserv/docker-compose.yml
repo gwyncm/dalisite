@@ -8,21 +8,21 @@ services:
       - 27017:27017
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: admin8623
-      MONGO_INITDB_DATABASE: admin
+      MONGODB_INITDB_ROOT_USERNAME: admin
+      MONGODB_INITDB_ROOT_PASSWORD: admin8623
+      MONGODB_INITDB_DATABASE: admin
     volumes:
       - mongo_vol:/data/db
       - mongo_cfg:/data/configdb
 
   nginx:
-    image: gwyncm/nginxconf:24.02.08
+    image: gwyncm/nginxconf:24.02.15
     ports:
       - 8080:8080  
     restart: always
      
   freeloader:
-    image: gwyncm/freeloader:24.02.06
+    image: gwyncm/freeloader:24.02.15
     ports:
       - 8070:8070    
     depends_on:
@@ -48,7 +48,7 @@ services:
       restart: always
 
   daliapp:
-    image: gwyncm/daliapp:24.02.10
+    image: gwyncm/daliapp:24.02.15
     ports:
       - 8090:8090    
     depends_on:
@@ -79,15 +79,6 @@ services:
       REDIS_HOST: redis
       APP_HOST: freeloader:8070
     restart: always
-
-  filebrowser:
-    image: filebrowser/filebrowser
-    ports:
-      - 8081:80
-    volumes:
-      - uploads_vol:/srv 
-      - ./filebrowser/filebrowser.db:/database.db
-      - ./filebrowser/filebrowser.json:/.filebrowser.json
 
 volumes:
   uploads_vol:
