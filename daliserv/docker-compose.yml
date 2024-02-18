@@ -2,27 +2,20 @@ version: '3.6'
 
 services:
 
-  mongodb:
-    image: mongodb/mongodb-community-server
-    ports: 
-      - 27017:27017
-    restart: unless-stopped
-    environment:
-      MONGODB_INITDB_ROOT_USERNAME: admin
-      MONGODB_INITDB_ROOT_PASSWORD: admin8623
-      MONGODB_INITDB_DATABASE: admin
-    volumes:
-      - mongo_vol:/data/db
-      - mongo_cfg:/data/configdb
-
-  nginx:
-    image: gwyncm/nginxconf:24.02.15
+  traefik:
+    image: traefik:v2.11
+    command: --api.insecure=true --providers.docker
     ports:
-      - 8080:8080  
+      # The HTTP port
+      - "8080:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8085:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: always
-     
+   
   freeloader:
-    image: gwyncm/freeloader:24.02.15
+    image: gwyncm/freeloader:24.02.17
     ports:
       - 8070:8070    
     depends_on:
@@ -30,9 +23,12 @@ services:
     environment:
       REDIS_HOST: redis
     labels:
-      kompose.volume.size: 2Gi  
+      - "traefik.enable=true"
+      - "traefik.http.routers.freeloader.rule=PathPrefix(`/freeloader`)"
+      - "traefik.http.services.freeloader.loadbalancer.server.port=8070"
+      - "kompose.volume.size: 2Gi"
     volumes:
-      -  uploads_vol:/freeloader/uploads
+      -  ./uploads:/freeloader/uploads
     restart: always
 
   schedman:
@@ -45,19 +41,27 @@ services:
       environment:
         REDIS_HOST: redis
         APP_HOST: freeloader:8070
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.schedman.rule=PathPrefix(`/schedman`)"
+        - "traefik.http.services.schedman.loadbalancer.server.port=8060"
       restart: always
 
   daliapp:
     image: gwyncm/daliapp:24.02.15
-    ports:
-      - 8090:8090    
     depends_on:
       - redis
       - freeloader
       - schedman
+    deploy:
+      replicas: 2
     environment:
       REDIS_HOST: redis
       APP_HOST: freeloader:8070
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.daliapp.rule=PathPrefix(`/daliapp`)"
+      - "traefik.http.services.daliapp.loadbalancer.server.port=8090"
     restart: always
 
   redis:
@@ -81,7 +85,4 @@ services:
     restart: always
 
 volumes:
-  uploads_vol:
   redis_vol:
-  mongo_vol:
-  mongo_cfg:
