@@ -4,7 +4,10 @@ metadata:
   annotations:
     kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
     kompose.version: 1.31.2 (a92241f79)
-    kompose.volume.size: 2Gi
+    'kompose.volume.size: 2Gi': ""
+    traefik.enable: "true"
+    traefik.http.routers.freeloader.rule: PathPrefix(`/freeloader`)
+    traefik.http.services.freeloader.loadbalancer.server.port: "8070"
   creationTimestamp: null
   labels:
     io.kompose.service: freeloader
@@ -21,7 +24,10 @@ spec:
       annotations:
         kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
         kompose.version: 1.31.2 (a92241f79)
-        kompose.volume.size: 2Gi
+        'kompose.volume.size: 2Gi': ""
+        traefik.enable: "true"
+        traefik.http.routers.freeloader.rule: PathPrefix(`/freeloader`)
+        traefik.http.services.freeloader.loadbalancer.server.port: "8070"
       creationTimestamp: null
       labels:
         io.kompose.network/daliserv-default: "true"
@@ -31,9 +37,7 @@ spec:
         - env:
             - name: REDIS_HOST
               value: redis
-            - name: TZ
-              value: America/New_York
-          image: gwyncm/freeloader:24.01.19
+          image: gwyncm/freeloader:24.02.17
           name: freeloader
           ports:
             - containerPort: 8070

@@ -9,7 +9,7 @@ metadata:
     io.kompose.service: daliserv
   name: daliserv
 spec:
-  replicas: 8
+  replicas: 2
   selector:
     matchLabels:
       io.kompose.service: daliserv
@@ -30,7 +30,7 @@ spec:
               value: freeloader:8070
             - name: REDIS_HOST
               value: redis
-          image: gwyncm/daliserv:24.01.19
+          image: gwyncm/daliserv:24.02.07
           name: daliserv
           resources: {}
       restartPolicy: Always

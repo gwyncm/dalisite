@@ -4,7 +4,10 @@ metadata:
   annotations:
     kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
     kompose.version: 1.31.2 (a92241f79)
-    kompose.volume.size: 2Gi
+    'kompose.volume.size: 2Gi': ""
+    traefik.enable: "true"
+    traefik.http.routers.freeloader.rule: PathPrefix(`/freeloader`)
+    traefik.http.services.freeloader.loadbalancer.server.port: "8070"
   creationTimestamp: null
   labels:
     io.kompose.service: freeloader

@@ -4,6 +4,9 @@ metadata:
   annotations:
     kompose.cmd: ../kompose convert -f ../daliserv/docker-compose.yml
     kompose.version: 1.31.2 (a92241f79)
+    traefik.enable: "true"
+    traefik.http.routers.schedman.rule: PathPrefix(`/schedman`)
+    traefik.http.services.schedman.loadbalancer.server.port: "8060"
   creationTimestamp: null
   labels:
     io.kompose.service: schedman
