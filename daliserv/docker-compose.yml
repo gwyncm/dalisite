@@ -1,9 +1,6 @@
-version: '3.6'
-
 services:
-
   traefik:
-    image: traefik:v2.11
+    image: traefik:v3.1.4
     command: --api.insecure=true --providers.docker
     ports:
       # The HTTP port
@@ -13,63 +10,124 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
-   
+
   freeloader:
-    image: gwyncm/freeloader:24.02.20
+    image: gwyncm/freeloader:24.09.28
     ports:
-      - 8070:8070    
+      - 8070:8070
     depends_on:
       - redis
     environment:
       REDIS_HOST: redis
-      TZ: 'America/New_York'
+      TZ: "America/New_York"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.freeloader.rule=PathPrefix(`/freeloader`)"
       - "traefik.http.services.freeloader.loadbalancer.server.port=8070"
       - "kompose.volume.size: 2Gi"
     volumes:
-      -  ./uploads:/freeloader/uploads
-    restart: always
-
-  daliapp:
-    image: gwyncm/daliapp:24.03.12
-    depends_on:
-      - redis
-      - freeloader
-    deploy:
-      replicas: 1
-    environment:
-      REDIS_HOST: redis
-      APP_HOST: daliapp:8090
-      TZ: 'America/New_York'
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.daliapp.rule=PathPrefix(`/daliapp`)"
-      - "traefik.http.services.daliapp.loadbalancer.server.port=8090"
-    volumes:
-      -  ./uploads:/daliapp/uploads
+      - ./uploads:/freeloader/uploads
     restart: always
 
   redis:
     image: redis:6.2-bookworm
-    ports: 
+    ports:
       - 6379:6379
     volumes:
       - redis_vol:/data
     restart: always
 
   daliserv:
-    image: gwyncm/daliserv:24.03.12
+    image: gwyncm/daliserv:24.09.28
     depends_on:
       - redis
-      - daliapp
+      - freeloader
+      - rabbitmq
+    environment:
+      AMQP_HOST: rabbitmq
+      REDIS_HOST: redis
+      DATA_HOST: freeloader:8070/freeloader
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: rabbitmq
+    volumes:
+      - ./rabbitmq:/etc/rabbitmq
+      - rabbitmq-data:/var/lib/rabbitmq/mnesia/rabbit@rabbitmq
+    ports:
+      - 1883:1883
+      - 5672:5672
+      - 15672:15672
+      - 15675:15675
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rabbit.rule=PathPrefix(`/rabbit`)"
+      - "traefik.http.middlewares.service-strip.stripprefix.prefixes=/rabbit"
+      - "traefik.http.services.rabbit.loadbalancer.server.port=15672"
+      - "traefik.http.routers.rabbit.middlewares=service-strip"
+    restart: always
+
+  daliapp:
+    image: gwyncm/daliapp:24.09.28
+    depends_on:
+      - redis
+      - freeloader
+      - rabbitmq
+    ports:
+      - 8090:8090
     deploy:
-      replicas: 2
+      replicas: 1
     environment:
       REDIS_HOST: redis
-      APP_HOST: daliapp:8090
+      DATA_HOST: freeloader:8070/freeloader
+      TZ: "America/New_York"
+      MQTT_HOST: rabbitmq
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.daliapp.rule=PathPrefix(`/daliapp`)"
+      - "traefik.http.services.daliapp.loadbalancer.server.port=8090"
+    restart: always
+
+  mqttgrid:
+    image: gwyncm/mqttgrid:24.09.28
+    depends_on:
+      - rabbitmq
+      - freeloader
+    ports:
+      - 8030:8030
+    environment:
+      DATA_HOST: freeloader:8070/freeloader
+      MQTT_HOST: rabbitmq
+      TZ: "America/New_York"
+      AMQP: true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mqttgrid.rule=PathPrefix(`/mqttgrid`)"
+      - "traefik.http.services.mqttgrid.loadbalancer.server.port=8030"
+    restart: always
+
+  mqttsched:
+    image: gwyncm/mqttsched:24.09.28
+    depends_on:
+      - rabbitmq
+      - freeloader
+    ports:
+      - 8060:8060
+    environment:
+      DATA_HOST: freeloader:8070/freeloader
+      MQTT_HOST: rabbitmq
+      TZ: "America/New_York"
+      AMQP: true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mqttsched.rule=PathPrefix(`/schedules`)"
+      - "traefik.http.services.mqttsched.loadbalancer.server.port=8060"
     restart: always
 
 volumes:
   redis_vol:
+  rabbitmq-data:
